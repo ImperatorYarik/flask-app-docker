@@ -19,7 +19,7 @@ def get_pull_requests(state):
             pull_request_info = {
                 'title': pr['title'],
                 'num': pr['number'],
-                'url': pr['html_url']
+                'link': pr['html_url']
             }
             pull_requests_info.append(pull_request_info)
         return pull_requests_info
