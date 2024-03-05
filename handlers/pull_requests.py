@@ -22,4 +22,4 @@ def get_pull_requests(state):
     else:
         return []
 
->>>>>>> flask-app-tests
+
