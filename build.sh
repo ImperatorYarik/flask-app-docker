@@ -1,3 +1,4 @@
 #!/bin/bash
 
-python start.py
+sudo docker compose build
+sudo docker compose up -d

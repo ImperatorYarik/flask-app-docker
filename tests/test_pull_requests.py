@@ -2,8 +2,6 @@
 import unittest
 from unittest.mock import patch
 
-import requests
-
 from handlers.pull_requests import get_pull_requests
 
 BASE_URL = 'https://api.github.com/repos/boto/boto3/pulls'
