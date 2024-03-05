@@ -4,6 +4,6 @@ requests-mock==1.10.0
 flake8==3.9.2
 pycodestyle==2.7.0
 tox==3.23.1
-mock==5.1.0
+mock==4.0.3
 
 
