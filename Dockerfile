@@ -3,8 +3,6 @@ WORKDIR /app
 
 COPY ./ /app
 COPY build.sh /app
-RUN ouo install --upgrade pip
-RUN pip install -r requirements.txt
 RUN chmod +x build.sh
 CMD ["/app/build.sh"]
 
