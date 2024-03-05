@@ -1,11 +1,10 @@
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import requests
 
-from handlers.pull_requests import get_pull_requests, BASE_URL
-
+from handlers.pull_requests import get_pull_requests
 
 BASE_URL = 'https://api.github.com/repos/boto/boto3/pulls'
 
@@ -79,6 +78,15 @@ class TestGetPullRequests(unittest.TestCase):
         pull_requests = get_pull_requests('open')
 
         self.assertEqual(pull_requests, [])
+
+    def test_unauthorized_error(self, mock_get):
+        # Mock unauthorized response
+        mocked_response = unittest.mock.MagicMock()
+        mocked_response.status_code = 401
+        mock_get.return_value = mocked_response
+
+        with self.assertRaises(requests.exceptions.RequestException):
+            get_pull_requests('open')
 
 
 if __name__ == '__main__':
