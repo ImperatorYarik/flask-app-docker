@@ -121,6 +121,33 @@ class TestParams(unittest.TestCase):
         self.assertEqual(state_param, 'open', "Expected 'state' parameter to be 'open'.")
         self.assertEqual(per_page_param, 100, "Expected 'per_page' parameter to be 100.")
 
+class TestErrorHandling(unittest.TestCase):
+    @patch('handlers.pull_requests.requests.get')
+    def test_api_failure(self, mock_get):
+        """Test handling of API failure."""
+        # Simulate API failure (e.g., 404 Not Found)
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+
+        # Ensure an empty list is returned on API failure
+        result = get_pull_requests('open')
+        self.assertEqual(result, [], "Should return an empty list on API failure.")
+
+    @patch('handlers.pull_requests.requests.get')
+    def test_empty_response(self, mock_get):
+        """Test handling of empty API response."""
+        # Simulate an empty API response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = []
+
+        mock_get.return_value = mock_response
+
+        # Ensure an empty list is returned when API response is empty
+        result = get_pull_requests('open')
+        self.assertEqual(result, [], "Should return an empty list when API response is empty.")
+
 
 if __name__ == '__main__':
     unittest.main()
