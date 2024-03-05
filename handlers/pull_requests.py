@@ -1,19 +1,25 @@
 
-import os
+import requests
 
-TOKEN = os.getenv("TOKEN")
-HEADERS = {'Authorization': f'Bearer {TOKEN}'}
-
+BASE_URL = 'https://api.github.com/repos/boto/boto3/pulls'
 
 def get_pull_requests(state):
-    """
-    Example of return:
-    [
-        {"title": "Add useful stuff", "num": 56, "link": "https://github.com/boto/boto3/pull/56"},
-        {"title": "Fix something", "num": 57, "link": "https://github.com/boto/boto3/pull/57"},
-    ]
-    """
+    params = {'state': state, 'per_page': 100}
 
     # Write your code here
+    response = requests.get(BASE_URL, params)
+    if response.status_code == 200:
+        pull_requests_data = response.json()
+        pull_requests_info = []
+        for pr in pull_requests_data:
+            pull_request_info = {
+                'title': pr['title'],
+                'num': pr['number'],
+                'link': pr['html_url']
+            }
+            pull_requests_info.append(pull_request_info)
+        return pull_requests_info
+    else:
+        return []
 
-    return []
+>>>>>>> flask-app-tests
