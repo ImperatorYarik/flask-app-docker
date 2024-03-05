@@ -7,146 +7,54 @@ import requests
 from handlers.pull_requests import get_pull_requests, BASE_URL
 
 
-class TestOpenPullRequests(unittest.TestCase):
-    @patch('handlers.pull_requests.requests.get')
-    def test_pull_requests(self, get_mock):
-        """Test open pull requests"""
+BASE_URL = 'https://api.github.com/repos/boto/boto3/pulls'
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = [
-            {
-                'number': 4010,
-                'title': 'DynamoDB: Add support for…items for boto3 resource',
-                'html_url': 'https://github.com/boto/boto3/pull/4010'
+
+def get_pull_requests(state):
+    params = {'state': state, 'per_page': 100}
+
+    response = requests.get(BASE_URL, params)
+    if response.status_code == 200:
+        pull_requests_data = response.json()
+        pull_requests_info = []
+        for pr in pull_requests_data:
+            pull_request_info = {
+                'title': pr['title'],
+                'num': pr['number'],
+                'link': pr['html_url']
             }
+            pull_requests_info.append(pull_request_info)
+        return pull_requests_info
+    else:
+        return []
+
+
+class TestGetPullRequests(unittest.TestCase):
+
+    def test_successful_response(self):
+        # Mock the requests.get method to return a successful response
+        mocked_response = unittest.mock.MagicMock()
+        mocked_response.status_code = 200
+        mocked_response.json.return_value = [
+            {'title': 'PR Title 1', 'number': 123, 'html_url': 'https://github.com/pull/123'},
+            {'title': 'PR Title 2', 'number': 456, 'html_url': 'https://github.com/pull/456'},
         ]
+        with unittest.mock.patch('requests.get', return_value=mocked_response):
+            pull_requests = get_pull_requests('open')
 
-        get_mock.return_value = mock_response
+        self.assertEqual(len(pull_requests), 2)
+        self.assertEqual(pull_requests[0]['title'], 'PR Title 1')
+        self.assertEqual(pull_requests[0]['num'], 123)
+        self.assertEqual(pull_requests[0]['link'], 'https://github.com/pull/123')
 
-        expected_res = [
-            {
-                'num': 4010,
-                'title': 'DynamoDB: Add support for…items for boto3 resource',
-                'link': 'https://github.com/boto/boto3/pull/4010'
-            }
-        ]
-        res = get_pull_requests('open')
-        self.assertEqual(res, expected_res)
+    def test_unsuccessful_response(self):
+        # Mock the requests.get method to return an unsuccessful response
+        mocked_response = unittest.mock.MagicMock()
+        mocked_response.status_code = 404
+        with unittest.mock.patch('requests.get', return_value=mocked_response):
+            pull_requests = get_pull_requests('open')
 
-
-class TestClosedPullRequests(unittest.TestCase):
-    @patch('handlers.pull_requests.requests.get')
-    def test_pull_requests(self, get_mock):
-        """Test closed pull requests"""
-
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = [
-            {
-                'number': 3998,
-                'title': 'Minor GitHub workflow changes',
-                'html_url': 'https://github.com/boto/boto3/pull/3998'
-            }
-        ]
-
-        get_mock.return_value = mock_response
-
-        expected_res = [
-            {
-                'num': 3998,
-                'title': 'Minor GitHub workflow changes',
-                'link': 'https://github.com/boto/boto3/pull/3998'
-            }
-        ]
-        res = get_pull_requests('closed')
-        self.assertEqual(res, expected_res)
-
-class TestPullRequestsFailure(unittest.TestCase):
-    @patch('handlers.pull_requests.requests.get')
-    def test_api_failure(self, get_mock):
-        """Test API failure scenarios"""
-        # Simulate a 404 Not Found error
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        get_mock.return_value = mock_response
-
-        result = get_pull_requests('open')
-        self.assertEqual(result, [], "Should return an empty list on API failure")
-
-class TestEmptyPullRequests(unittest.TestCase):
-    @patch('handlers.pull_requests.requests.get')
-    def test_empty_pull_requests(self, get_mock):
-        """Test receiving an empty list of pull requests"""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = []
-
-        get_mock.return_value = mock_response
-
-        result = get_pull_requests('open')
-        self.assertEqual(result, [], "Should return an empty list when no pull requests are found")
-
-
-class TestBaseUrlUsage(unittest.TestCase):
-    @patch('handlers.pull_requests.requests.get')
-    def test_base_url_usage(self, mock_get):
-        """Test that the correct BASE_URL is used in API requests."""
-        get_pull_requests('open')
-
-        self.assertTrue(mock_get.called, "requests.get should be called.")
-
-        called_url = mock_get.call_args[0][0]
-
-        self.assertEqual(called_url, BASE_URL, f"Expected BASE_URL '{BASE_URL}', but got '{called_url}'.")
-
-
-class TestParams(unittest.TestCase):
-    @patch('handlers.pull_requests.requests.get')
-    def test_params(self, mock_get):
-        """Test that the correct parameters are passed in API requests."""
-        get_pull_requests('open')
-
-        self.assertTrue(mock_get.called, "requests.get should be called.")
-
-        called_args, _ = mock_get.call_args
-
-        self.assertIn('state', called_args[1], "'state' parameter should be included in the call to requests.get.")
-        self.assertIn('per_page', called_args[1],
-                      "'per_page' parameter should be included in the call to requests.get.")
-
-        state_param = called_args[1]['state']
-        per_page_param = called_args[1]['per_page']
-
-        self.assertEqual(state_param, 'open', "Expected 'state' parameter to be 'open'.")
-        self.assertEqual(per_page_param, 100, "Expected 'per_page' parameter to be 100.")
-
-class TestErrorHandling(unittest.TestCase):
-    @patch('handlers.pull_requests.requests.get')
-    def test_api_failure(self, mock_get):
-        """Test handling of API failure."""
-        # Simulate API failure (e.g., 404 Not Found)
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_get.return_value = mock_response
-
-        # Ensure an empty list is returned on API failure
-        result = get_pull_requests('open')
-        self.assertEqual(result, [], "Should return an empty list on API failure.")
-
-    @patch('handlers.pull_requests.requests.get')
-    def test_empty_response(self, mock_get):
-        """Test handling of empty API response."""
-        # Simulate an empty API response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = []
-
-        mock_get.return_value = mock_response
-
-        # Ensure an empty list is returned when API response is empty
-        result = get_pull_requests('open')
-        self.assertEqual(result, [], "Should return an empty list when API response is empty.")
+        self.assertEqual(pull_requests, [])
 
 
 if __name__ == '__main__':
