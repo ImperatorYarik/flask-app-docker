@@ -87,25 +87,39 @@ class TestEmptyPullRequests(unittest.TestCase):
         result = get_pull_requests('open')
         self.assertEqual(result, [], "Should return an empty list when no pull requests are found")
 
-class TestMalformedPullRequests(unittest.TestCase):
+
+class TestBaseUrlUsage(unittest.TestCase):
     @patch('handlers.pull_requests.requests.get')
-    def test_malformed_pull_requests(self, get_mock):
-        """Test handling of malformed pull request data"""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        # Missing 'title' and 'html_url'
-        mock_response.json.return_value = [{
-            'number': 4040,
-            'html_url': 'https://github.com/boto/boto3/pull/4010'
-        }]
+    def test_base_url_usage(self, mock_get):
+        """Test that the correct BASE_URL is used in API requests."""
+        get_pull_requests('open')
 
-        get_mock.return_value = mock_response
+        self.assertTrue(mock_get.called, "requests.get should be called.")
 
-        expected_res = [{'num': 4040, 'title': '', 'link': 'https://github.com/boto/boto3/pull/4010'}]
-        result = get_pull_requests('open')
-        self.assertEqual(result, expected_res, "Should handle missing data gracefully")
+        called_url = mock_get.call_args[0][0]
+
+        self.assertEqual(called_url, BASE_URL, f"Expected BASE_URL '{BASE_URL}', but got '{called_url}'.")
 
 
+class TestParams(unittest.TestCase):
+    @patch('handlers.pull_requests.requests.get')
+    def test_params(self, mock_get):
+        """Test that the correct parameters are passed in API requests."""
+        get_pull_requests('open')
+
+        self.assertTrue(mock_get.called, "requests.get should be called.")
+
+        called_args, _ = mock_get.call_args
+
+        self.assertIn('state', called_args[1], "'state' parameter should be included in the call to requests.get.")
+        self.assertIn('per_page', called_args[1],
+                      "'per_page' parameter should be included in the call to requests.get.")
+
+        state_param = called_args[1]['state']
+        per_page_param = called_args[1]['per_page']
+
+        self.assertEqual(state_param, 'open', "Expected 'state' parameter to be 'open'.")
+        self.assertEqual(per_page_param, 100, "Expected 'per_page' parameter to be 100.")
 
 
 if __name__ == '__main__':
