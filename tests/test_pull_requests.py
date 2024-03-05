@@ -87,6 +87,24 @@ class TestEmptyPullRequests(unittest.TestCase):
         result = get_pull_requests('open')
         self.assertEqual(result, [], "Should return an empty list when no pull requests are found")
 
+class TestMalformedPullRequests(unittest.TestCase):
+    @patch('handlers.pull_requests.requests.get')
+    def test_malformed_pull_requests(self, get_mock):
+        """Test handling of malformed pull request data"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        # Missing 'title' and 'html_url'
+        mock_response.json.return_value = [{
+            'number': 4040,
+            'html_url': 'https://github.com/boto/boto3/pull/4010'
+        }]
+
+        get_mock.return_value = mock_response
+
+        expected_res = [{'num': 4040, 'title': '', 'link': 'https://github.com/boto/boto3/pull/4010'}]
+        result = get_pull_requests('open')
+        self.assertEqual(result, expected_res, "Should handle missing data gracefully")
+
 
 
 
